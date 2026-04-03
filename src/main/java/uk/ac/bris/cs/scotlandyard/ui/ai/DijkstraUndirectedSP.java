@@ -3,7 +3,6 @@ package uk.ac.bris.cs.scotlandyard.ui.ai;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.graph.EndpointPair;
 import com.google.common.graph.ImmutableValueGraph;
-import org.checkerframework.checker.units.qual.A;
 import uk.ac.bris.cs.scotlandyard.model.ScotlandYard;
 
 import java.util.*;
@@ -13,58 +12,87 @@ import java.util.*;
 // thus we compile all of the moves relative to all the detectives and see which are most unreachable still.
 
 public class DijkstraUndirectedSP {
-
-    ArrayList<ArrayList<ScotlandYard.Ticket>> tickTo;          // tickTo[v] = tickets to,  of shortest s->v path
-    Integer distTo[];
+//
+//    ArrayList<ArrayList<ScotlandYard.Ticket>> tickTo;          // tickTo[v] = tickets to,  of shortest s->v path
+    Integer distTo[];               // distTo[v] = distance  of shortest s->v path, IN NUMBER OF TICKETS
     EndpointPair<Integer>[] edgeTo;            // edgeTo[v] = last edge on shortest s->v path
-    IndexMinPQ<Integer> pq;                        // priority queue of vertices
+    IndexMinPQ<Integer> pqOfVertices;                        // priority queue of vertices
+    int mrXlocation;
+    List<Integer> detlocations;
+    ImmutableValueGraph<Integer, ImmutableSet<ScotlandYard.Transport>> graph;
 
-    private void dijkstraUndirectedSP(ImmutableValueGraph<Integer, ImmutableSet<ScotlandYard.Transport>> graph, int mrXLocation, List<Integer> detLocations) {
-//        Traverser.forGraph(graph).breadthFirst(StartingNode);
+    private int DijkstraUndirectedSP(ImmutableValueGraph<Integer, ImmutableSet<ScotlandYard.Transport>> graph, int mrXLocation, List<Integer> detLocations) {
+
+        this.graph = graph;
+        this.detlocations = detLocations;
+        this.mrXlocation = mrXLocation;
+
         int totalNodesNum = graph.nodes().size();
         int numNodes = detLocations.size() + 1;
-        tickTo = new ArrayList<ArrayList<ScotlandYard.Ticket>>();
+
         distTo = new Integer[totalNodesNum];
         edgeTo = new EndpointPair[totalNodesNum];
 
-        for (int v = 0; v < numNodes; v++) {
+        for (int v = 0; v < totalNodesNum; v++) {
             distTo[v] = Integer.MAX_VALUE;
         }
-        distTo[0] = 0; //assuming the first node is literally just mrX's location
-        //or perhaps just index based on
+        distTo[mrXLocation] = 0;
+        //assuming the first node is literally just mrX's location
+        //or perhaps just index based on nodes number
 
-        pq = new IndexMinPQ<Integer>(numNodes);
-        pq.insert(mrXLocation, distTo[0]);
-        while (!pq.isEmpty()) {
-            int v = pq.delMin();
+        pqOfVertices = new IndexMinPQ<>(totalNodesNum);
+        pqOfVertices.insert(mrXLocation, distTo[0]);
+
+
+        while (!pqOfVertices.isEmpty() && !(checkAllDetectivesDiscovered())) {
+            int v = pqOfVertices.delMin();
             for (EndpointPair e : graph.incidentEdges(v)) {
-                relax(e, v);
+                relax( e, v);
             }
 
-
         }
+
+        return sumValueOfMrXPosition();
     }
-    private void relax (EndpointPair<Integer> e, Integer v){
 
-        Integer w;
-        if (e.nodeU() == v) {
-            w = (Integer) e.nodeU();
+    private int sumValueOfMrXPosition(){
+        int total = 0;
+        for(int detlocation : detlocations){
+            total += distTo[detlocation];
+        }
+        return total;
+    }
+
+    private Boolean checkAllDetectivesDiscovered(){
+        for (Integer location : detlocations){
+            if(distTo[location] == Integer.MAX_VALUE){
+                return false;
+            }
+        }
+        return true;
+    }
+
+    private void relax ( EndpointPair<Integer> edge, Integer startingNode){
+
+        Integer endNode;
+        if (edge.nodeU() == startingNode) {
+            endNode = (Integer) edge.nodeU();
         } else {
-            w = (Integer) e.nodeV();
+            endNode = (Integer) edge.nodeV();
         }
 
-        ImmutableSet<ScotlandYard.Transport> edgeTickets = graph.edgeValue((Integer) e.nodeU(), (Integer) e.nodeV()).orElseThrow();
+        ImmutableSet<ScotlandYard.Transport> edgeTickets = graph.edgeValue((Integer) edge.nodeU(), (Integer) edge.nodeV()).orElseThrow();
         Integer distance = edgeTickets.size();
 
-        if (distTo[w] > distTo[v] + distance) {
-            distTo[w] = distTo[v] + distance;
-            edgeTo[w] = e;
+        if (distTo[endNode] > distTo[startingNode] + distance) {
+            distTo[endNode] = distTo[startingNode] + distance;
+            edgeTo[endNode] = edge;
 
-            if(pq.contains(w)){
-                pq.decreaseKey(w,distTo[w]);
+            if(pqOfVertices.contains(endNode)){
+                pqOfVertices.decreaseKey(endNode,distTo[endNode]);
             }
             else{
-                pq.insert(w, distTo[w]);
+                pqOfVertices.insert(endNode, distTo[endNode]);
             }
         }
     }

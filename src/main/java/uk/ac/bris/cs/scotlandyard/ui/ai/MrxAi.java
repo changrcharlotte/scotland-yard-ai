@@ -28,7 +28,7 @@ public class MrxAi implements Ai {
             @Nonnull Board board,
             Pair<Long, TimeUnit> timeoutPair) {
 
-
+    //initialise locations
         List<Integer>  detLocations= new ArrayList<Integer>();
         ImmutableSet<Piece> pieces= board.getPlayers();
         for(Piece piece : pieces){
@@ -40,6 +40,7 @@ public class MrxAi implements Ai {
                 }
             }
         }
+
 
 
 
