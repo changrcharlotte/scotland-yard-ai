@@ -20,47 +20,51 @@ public class DijkstraUndirectedSP {
     int mrXlocation;
     List<Integer> detlocations;
     ImmutableValueGraph<Integer, ImmutableSet<ScotlandYard.Transport>> graph;
+    int totalNodesNum;
 
-    private int DijkstraUndirectedSP(ImmutableValueGraph<Integer, ImmutableSet<ScotlandYard.Transport>> graph, int mrXLocation, List<Integer> detLocations) {
-
+    public DijkstraUndirectedSP(ImmutableValueGraph<Integer, ImmutableSet<ScotlandYard.Transport>> graph) {
         this.graph = graph;
-        this.detlocations = detLocations;
-        this.mrXlocation = mrXLocation;
+        totalNodesNum = graph.nodes().size();
+        distTo = new Integer[totalNodesNum+1]; //+1 since we want to translate the name of the node to the index without minusing 1
+        edgeTo = new EndpointPair[totalNodesNum+1];
 
-        int totalNodesNum = graph.nodes().size();
-        int numNodes = detLocations.size() + 1;
 
-        distTo = new Integer[totalNodesNum];
-        edgeTo = new EndpointPair[totalNodesNum];
-
-        for (int v = 0; v < totalNodesNum; v++) {
-            distTo[v] = Integer.MAX_VALUE;
-        }
-        distTo[mrXLocation] = 0;
         //assuming the first node is literally just mrX's location
         //or perhaps just index based on nodes number
 
-        pqOfVertices = new IndexMinPQ<>(totalNodesNum);
+    }
+
+    public int findSP(int mrXLocation, List<Integer> detLocations){
+
+        this.detlocations = detLocations;
+        this.mrXlocation = mrXLocation;
+
+        int numNodes = detLocations.size() + 1; //+1 for mrX
+
+        for (int v = 0; v < totalNodesNum+1; v++) {
+            distTo[v] = Integer.MAX_VALUE;
+        }
+        distTo[mrXLocation] = 0;
+
+
+        pqOfVertices = new IndexMinPQ<>(totalNodesNum+1);
         pqOfVertices.insert(mrXLocation, distTo[0]);
 
 
         while (!pqOfVertices.isEmpty() && !(checkAllDetectivesDiscovered())) {
-            int v = pqOfVertices.delMin();
-            for (EndpointPair e : graph.incidentEdges(v)) {
-                relax( e, v);
+            int nextVertex = pqOfVertices.delMin();
+            for (EndpointPair edge : graph.incidentEdges(nextVertex)) {
+                relax( edge, nextVertex);
             }
 
         }
-
-        return sumValueOfMrXPosition();
-    }
-
-    private int sumValueOfMrXPosition(){
         int total = 0;
         for(int detlocation : detlocations){
             total += distTo[detlocation];
         }
         return total;
+
+
     }
 
     private Boolean checkAllDetectivesDiscovered(){
@@ -72,17 +76,25 @@ public class DijkstraUndirectedSP {
         return true;
     }
 
-    private void relax ( EndpointPair<Integer> edge, Integer startingNode){
+    private void relax ( EndpointPair<Integer> edge, Integer startingNode) {
 
         Integer endNode;
         if (edge.nodeU() == startingNode) {
-            endNode = (Integer) edge.nodeU();
-        } else {
             endNode = (Integer) edge.nodeV();
+        } else {
+            endNode = (Integer) edge.nodeU();
         }
 
-        ImmutableSet<ScotlandYard.Transport> edgeTickets = graph.edgeValue((Integer) edge.nodeU(), (Integer) edge.nodeV()).orElseThrow();
-        Integer distance = edgeTickets.size();
+        ImmutableSet<ScotlandYard.Transport> edgeTransports = graph.edgeValue((Integer) edge.nodeU(), (Integer) edge.nodeV()).orElseThrow();
+        Integer distance = 0;
+        for(ScotlandYard.Transport transport : edgeTransports){
+            switch(transport){
+                case TAXI -> distance +=1;
+                case BUS -> distance += 2;
+                case UNDERGROUND -> distance +=3;
+                case FERRY -> distance += 5;
+            }
+        }
 
         if (distTo[endNode] > distTo[startingNode] + distance) {
             distTo[endNode] = distTo[startingNode] + distance;

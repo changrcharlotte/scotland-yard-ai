@@ -24,10 +24,12 @@ public class MrxAi implements Ai {
 
     @Nonnull @Override public String name() { return "MrxAi"; }
 
+    Board board;
     @Nonnull @Override public Move pickMove(
             @Nonnull Board board,
             Pair<Long, TimeUnit> timeoutPair) {
 
+        this.board = board;
     //initialise locations
         List<Integer>  detLocations= new ArrayList<Integer>();
         ImmutableSet<Piece> pieces= board.getPlayers();
@@ -49,10 +51,24 @@ public class MrxAi implements Ai {
         ImmutableList<Move> moves = board.getAvailableMoves().asList();
         int mrXlocation = moves.get(0).source();
 
+
+
+        int val = Integer.MIN_VALUE;
+        Move curMv = null;
+        for(Move mv : moves){
+            DijkstraUndirectedSP dj = new DijkstraUndirectedSP(board.getSetup().graph);
+            int dest = mv.accept(new destinationVisitor());
+            int eval = dj.findSP(dest, detLocations);
+            if(eval>val){
+                val = eval;
+                curMv = mv;
+            }
+        }
+
+        return curMv;
+
 //        // returns a random move, replace with your own implementation
 //        return moves.get(new Random().nextInt(moves.size()));
-
-
 
     }
 
