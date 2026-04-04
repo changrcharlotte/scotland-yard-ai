@@ -14,15 +14,14 @@ import java.util.stream.Collectors;
 import com.google.common.graph.Traverser;
 import jakarta.annotation.Nonnull;
 import io.atlassian.fugue.Pair;
-import uk.ac.bris.cs.scotlandyard.model.Ai;
-import uk.ac.bris.cs.scotlandyard.model.Board;
-import uk.ac.bris.cs.scotlandyard.model.Move;
-import uk.ac.bris.cs.scotlandyard.model.Piece;
+import uk.ac.bris.cs.scotlandyard.model.*;
 import uk.ac.bris.cs.scotlandyard.model.ScotlandYard.Transport;
-import uk.ac.bris.cs.scotlandyard.model.ScotlandYard;
+
 public class MrxAi implements Ai {
 
     @Nonnull @Override public String name() { return "MrxAi"; }
+
+
 
     Board board;
     @Nonnull @Override public Move pickMove(
@@ -43,49 +42,38 @@ public class MrxAi implements Ai {
             }
         }
 
-
-
-
         //i'm assuming the starting position of mrX is random as well
 
         ImmutableList<Move> moves = board.getAvailableMoves().asList();
         int mrXlocation = moves.get(0).source();
 
-
-
-        int val = Integer.MIN_VALUE;
+        int maxDeg = Integer.MIN_VALUE;
+        int maxVal = Integer.MIN_VALUE;
         Move curMv = null;
-        for(Move mv : moves){
-            DijkstraUndirectedSP dj = new DijkstraUndirectedSP(board.getSetup().graph);
-            int dest = mv.accept(new destinationVisitor());
+        DijkstraUndirectedSP dj = new DijkstraUndirectedSP(board.getSetup().graph);
+        int[] evals = new int[moves.size()];
+
+        for(int i = 0; i > moves.size(); i ++){
+            int dest = moves.get(i).accept(new destinationVisitor());
             int eval = dj.findSP(dest, detLocations);
-            if(eval>val){
-                val = eval;
-                curMv = mv;
+            evals[i] = eval;
+            if(eval>maxVal){
+                maxVal = eval;
+                if(board.getSetup().graph.degree(dest) > maxDeg){
+                    maxDeg = board.getSetup().graph.degree(dest);
+                    curMv = moves.get(i);
+                }
+
             }
         }
 
+
         return curMv;
 
-//        // returns a random move, replace with your own implementation
-//        return moves.get(new Random().nextInt(moves.size()));
 
     }
 
-    private int evaluateScore(Board board, int mrXlocation, List<Integer> detLocations){
-        return 0;
-    }
 
-//    private ImmutableSet<Move> checkNeighbouringNodes(Board board, int mrXlocation, List<Integer> detLocations){
-//
-//        List<Integer> banned = new ArrayList<Integer>();
-//        for(int destination : board.getSetup().graph.adjacentNodes(mrXlocation)){
-//            if(detLocations.contains(destination)){
-//
-//            }
-//        }
-//        board.
-//    }
 
 
 
