@@ -51,12 +51,10 @@ public class MrxAi implements Ai {
         int maxVal = Integer.MIN_VALUE;
         Move curMv = null;
         DijkstraUndirectedSP dj = new DijkstraUndirectedSP(board.getSetup().graph);
-        int[] evals = new int[moves.size()];
 
-        for(int i = 0; i > moves.size(); i ++){
+        for(int i = 0; i < moves.size(); i ++){
             int dest = moves.get(i).accept(new destinationVisitor());
             int eval = dj.findSP(dest, detLocations);
-            evals[i] = eval;
             if(eval>maxVal){
                 maxVal = eval;
                 if(board.getSetup().graph.degree(dest) > maxDeg){
@@ -67,6 +65,9 @@ public class MrxAi implements Ai {
             }
         }
 
+        if(curMv == null){
+            return curMv;
+        }
 
         return curMv;
 
