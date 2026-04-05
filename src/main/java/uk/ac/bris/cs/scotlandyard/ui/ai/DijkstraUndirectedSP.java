@@ -13,10 +13,11 @@ import java.util.*;
 
 public class DijkstraUndirectedSP {
 //
-//    ArrayList<ArrayList<ScotlandYard.Ticket>> tickTo;          // tickTo[v] = tickets to,  of shortest s->v path
+    ScotlandYard.Transport[][] transTo;          // tickTo[v] = tickets to,  of shortest s->v path
     Integer distTo[];               // distTo[v] = distance  of shortest s->v path, IN NUMBER OF TICKETS
     EndpointPair<Integer>[] edgeTo;            // edgeTo[v] = last edge on shortest s->v path
     IndexMinPQ<Integer> pqOfVertices;                        // priority queue of vertices
+
     int mrXlocation;
     List<Integer> detlocations;
     ImmutableValueGraph<Integer, ImmutableSet<ScotlandYard.Transport>> graph;
@@ -44,8 +45,9 @@ public class DijkstraUndirectedSP {
         for (int v = 0; v < totalNodesNum+1; v++) {
             distTo[v] = Integer.MAX_VALUE;
         }
-        distTo[mrXLocation] = 0;
 
+        distTo[mrXLocation] = 0;
+        transTo = new ScotlandYard.Transport[totalNodesNum+1][];
 
         pqOfVertices = new IndexMinPQ<>(totalNodesNum+1);
         pqOfVertices.insert(mrXLocation, distTo[0]);
@@ -61,6 +63,10 @@ public class DijkstraUndirectedSP {
         int total = 0;
         for(int detlocation : detlocations){
             total += distTo[detlocation];
+            switch(transTo[detlocation].length){
+                case 1-> total += -10;
+                case 2 ->total += -5;
+            }
         }
         return total;
 
@@ -85,7 +91,8 @@ public class DijkstraUndirectedSP {
             endNode = (Integer) edge.nodeU();
         }
 
-        ImmutableSet<ScotlandYard.Transport> edgeTransports = graph.edgeValue((Integer) edge.nodeU(), (Integer) edge.nodeV()).orElseThrow();
+        ImmutableSet<ScotlandYard.Transport> immEdgeTransports = graph.edgeValue((Integer) edge.nodeU(), (Integer) edge.nodeV()).orElseThrow();
+        ArrayList<ScotlandYard.Transport> edgeTransports = new ArrayList<>(immEdgeTransports);
         Integer distance = 0;
         for(ScotlandYard.Transport transport : edgeTransports){
             switch(transport){
@@ -99,7 +106,8 @@ public class DijkstraUndirectedSP {
         if (distTo[endNode] > distTo[startingNode] + distance) {
             distTo[endNode] = distTo[startingNode] + distance;
             edgeTo[endNode] = edge;
-
+            int size =edgeTransports.toArray().length;
+            transTo[endNode] = new ScotlandYard.Transport[size];
             if(pqOfVertices.contains(endNode)){
                 pqOfVertices.decreaseKey(endNode,distTo[endNode]);
             }
