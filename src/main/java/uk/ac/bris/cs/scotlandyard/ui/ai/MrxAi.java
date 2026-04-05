@@ -23,12 +23,10 @@ public class MrxAi implements Ai {
 
 
 
-    Board board;
     @Nonnull @Override public Move pickMove(
             @Nonnull Board board,
             Pair<Long, TimeUnit> timeoutPair) {
 
-        this.board = board;
     //initialise locations
         List<Integer>  detLocations= new ArrayList<Integer>();
         ImmutableSet<Piece> pieces= board.getPlayers();
@@ -50,30 +48,16 @@ public class MrxAi implements Ai {
         int maxDeg = Integer.MIN_VALUE;
         int maxVal = Integer.MIN_VALUE;
         Move curMv = null;
-        DijkstraUndirectedSP dj = new DijkstraUndirectedSP(board.getSetup().graph);
 
         for(int i = 0; i < moves.size(); i ++){
-            int dest = moves.get(i).accept(new destinationVisitor());
-            int eval = dj.findSP(dest, detLocations);
-            if(eval>maxVal){
-                maxVal = eval;
-                if(board.getSetup().graph.degree(dest) > maxDeg){
-                    maxDeg = board.getSetup().graph.degree(dest);
-                    curMv = moves.get(i);
-                }
 
-            }
         }
 
-        if(curMv == null){
-            return curMv;
-        }
 
         return curMv;
 
 
     }
-
 
 
 
