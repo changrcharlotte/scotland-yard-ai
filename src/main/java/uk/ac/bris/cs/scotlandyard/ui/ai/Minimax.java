@@ -1,7 +1,13 @@
 package uk.ac.bris.cs.scotlandyard.ui.ai;
 import com.google.common.collect.ImmutableList;
 
+import com.google.common.collect.ImmutableSet;
 import uk.ac.bris.cs.scotlandyard.model.*;
+
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 
 public class Minimax {
 
@@ -63,8 +69,60 @@ public class Minimax {
         };
 
 
-        private void simulateAdvance(){
+        private void simulateAdvance(Move move){
+            Move.SingleMove mv = (Move.SingleMove) move;
 
+            //initialising new gamestate variables
+            Player newMrX = mrX;
+            List<Player> newDetectives = new ArrayList<>(detectives);
+            ImmutableList<LogEntry> newLog = log;
+            Set<Piece> newRemaining = new HashSet<>(remaining);
+
+            if (mv.commencedBy().isMrX()) { //if the piece making the move is MrX
+                newMrX = mrX.use(mv.ticket).at(mv.destination); //use the ticket
+
+                boolean reveal = setup.moves.get(log.size()); //get whether the mrX piece is being revealed on this turn
+                LogEntry entry;
+                if (reveal) {
+                    entry = LogEntry.reveal(mv.ticket, mv.destination);
+                } else {
+                    entry = LogEntry.hidden(mv.ticket);
+                }
+
+                newLog = ImmutableList.<LogEntry>builder().addAll(log).add(entry).build();
+                newRemaining.clear();
+                for (Player d : newDetectives) { //basically if a move can be played, any move at all then add it into the new remaining
+                    if (!makeSingleMoves(setup, newDetectives, d, d.location()).isEmpty()) {
+                        newRemaining.add(d.piece());
+                    }
+                }
+
+            } else { //if the piece making the move is not MrX
+                for (int i = 0; i < newDetectives.size(); i++) {
+                    Player d = newDetectives.get(i);
+                    if (d.piece() == mv.commencedBy()) { //check which piece the move belongs to
+                        Player updated = d.use(mv.ticket).at(mv.destination);
+                        newDetectives.set(i, updated);
+                        newMrX = newMrX.give(mv.ticket); //because mrX uses the discarded tickets i think lmao
+                        break;
+                    }
+                }
+
+                newRemaining.remove(mv.commencedBy());
+
+            }
+            if (newRemaining.isEmpty()) {
+                newRemaining.add(Piece.MrX.MRX); //if it's empty then you know it's the next round basically and it's now mrX's turn
+            }
+
+            //return the gamestate
+            return new MyGameStateFactory.MyGameState(
+                    setup,
+                    ImmutableSet.copyOf(newRemaining),
+                    newLog,
+                    newMrX,
+                    newDetectives
+            );
         }
 
 
